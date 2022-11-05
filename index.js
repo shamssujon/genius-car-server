@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 7100;
@@ -35,12 +35,21 @@ const client = new MongoClient(uri, {
 const run = async () => {
     try {
         const serviceCollection = client.db("geniusCarDB").collection("services");
-        const query = {};
-        const cursor = serviceCollection.find(query);
-        const services = await cursor.toArray();
 
-        app.get("/services", (req, res) => {
+        // Load all services from DB
+        app.get("/services", async (req, res) => {
+            const query = {};
+            const cursor = serviceCollection.find(query);
+            const services = await cursor.toArray();
             res.send(services);
+        });
+
+        // Load a single service from DB
+        app.get("/service/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const service = await serviceCollection.findOne(query);
+            res.send(service);
         });
     } finally {
     }

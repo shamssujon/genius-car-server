@@ -19,7 +19,6 @@ app.get("/", (req, res) => {
     res.send(`Genius car server is running on port: ${port}`);
 });
 
-
 // Get username password from env file
 const userName = process.env.DB_USER_NAME;
 const password = process.env.DB_PASSWORD;
@@ -32,8 +31,18 @@ const client = new MongoClient(uri, {
     useUnifiedTopology: true,
     serverApi: ServerApiVersion.v1,
 });
-client.connect((err) => {
-    const collection = client.db("test").collection("devices");
-    // perform actions on the collection object
-    client.close();
-});
+
+const run = async () => {
+    try {
+        const serviceCollection = client.db("geniusCarDB").collection("services");
+        const query = {};
+        const cursor = serviceCollection.find(query);
+        const services = await cursor.toArray();
+
+        app.get("/services", (req, res) => {
+            res.send(services);
+        });
+    } finally {
+    }
+};
+run().catch(console.dir);

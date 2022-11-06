@@ -62,12 +62,18 @@ const run = async () => {
 
         // Load orders from DB
         app.get("/orders", async (req, res) => {
-            const query = {};
+            let query = {};
+
+            // Load user specific orders with email query
+            const email = req.query.email;
+            if (email) {
+                query = { customerEmail: email };
+            }
+
             const cursor = orderCollection.find(query);
             const orders = await cursor.toArray();
             res.send(orders);
         });
-
     } finally {
     }
 };

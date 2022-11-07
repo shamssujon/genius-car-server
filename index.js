@@ -56,7 +56,7 @@ const run = async () => {
         // Receive single order from client, send to DB
         app.post("/order", async (req, res) => {
             const order = req.body;
-            order.dateAdded = new Date();
+            order.dateAdded = new Date().toLocaleDateString();
             console.log(order.dateAdded);
             const result = await orderCollection.insertOne(order);
             res.send(result);

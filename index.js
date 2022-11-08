@@ -34,12 +34,33 @@ const client = new MongoClient(uri, {
 });
 
 // Verify token
+const verifyJWT = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: "Unauthorized access" });
+    }
+    const token = authHeader.split(" ")[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).send({ message: "Forbidden access" });
+        }
 
+        req.decoded = decoded;
+        next();
+    });
+};
 
 const run = async () => {
     try {
         const serviceCollection = client.db("geniusCarDB").collection("services");
         const orderCollection = client.db("geniusCarDB").collection("orders");
+
+        // Create JWT token
+        app.post("/jwt", (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "5s" });
+            res.send({ token });
+        });
 
         // Load all services from DB
         app.get("/services", async (req, res) => {
@@ -57,20 +78,16 @@ const run = async () => {
             res.send(service);
         });
 
-        // Receive single order from client, send to DB
-        app.post("/order", async (req, res) => {
-            const order = req.body;
-            order.dateAdded = new Date().toLocaleDateString();
-            console.log(order.dateAdded);
-            const result = await orderCollection.insertOne(order);
-            res.send(result);
-        });
-
         // Load orders from DB
-        app.get("/orders", async (req, res) => {
-            
+        app.get("/orders", verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+
+            if (decoded.email !== req.query.email) {
+                res.status(403).send({ message: "Forbidden access" });
+            }
+
             let query = {};
-            
+
             // Load user specific orders with email query
             const email = req.query.email;
             if (email) {
@@ -82,19 +99,21 @@ const run = async () => {
             res.send(orders);
         });
 
+        // Receive single order from client, send to DB
+        app.post("/order", async (req, res) => {
+            const order = req.body;
+            order.dateAdded = new Date().toLocaleDateString();
+            console.log(order.dateAdded);
+            const result = await orderCollection.insertOne(order);
+            res.send(result);
+        });
+
         // Delete a order from DB
         app.delete("/order/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(query);
             res.send(result);
-        });
-
-        // Create JWT token
-        app.post("/jwt", (req, res) => {
-            const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });
-            res.send({ token });
         });
     } finally {
     }

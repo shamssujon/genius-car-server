@@ -58,7 +58,7 @@ const run = async () => {
         // Create JWT token
         app.post("/jwt", (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "5s" });
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1d" });
             res.send({ token });
         });
 

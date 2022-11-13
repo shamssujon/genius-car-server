@@ -64,6 +64,16 @@ const run = async () => {
 
 		// Load all services from DB
 		app.get("/services", async (req, res) => {
+			// const query = {price: {$gt: 150, $lt: 300}};
+			let query = {};
+
+			// Search
+			const search = req.query.search;
+			if (search.length > 0) {
+				query = { $text: { $search: search } };
+			}
+
+			// Sort services by asc/desc
 			const sortBy = req.query.sortBy;
 			let setSortBy = 1;
 			if (sortBy === "asc") {
@@ -71,7 +81,7 @@ const run = async () => {
 			} else if (sortBy === "desc") {
 				setSortBy = -1;
 			}
-			const query = {};
+
 			const cursor = serviceCollection.find(query);
 			const services = await cursor.sort({ price: setSortBy }).toArray();
 			res.send(services);
